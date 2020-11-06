@@ -1,0 +1,273 @@
+image:
+  name: WordPress
+  distribution: ubuntu
+  release: focal
+  description: |-
+    WordPress 5.5.3
+  architecture: x86_64
+
+source:
+  downloader: debootstrap
+  same_as: gutsy
+  url: http://archive.ubuntu.com/ubuntu
+  keyserver: keyserver.ubuntu.com
+  keys:
+    - 0x790BC7277767219C42C86F933B4FE6ACC0B21F32
+    - 0xF6ECB3762474EDA9D21B7022871920D1991BC93C
+
+files:
+  - path: /etc/hostname
+    generator: hostname
+
+  - path: /etc/hosts
+    generator: hosts
+
+  - path: /etc/resolvconf/resolv.conf.d/original
+    generator: remove
+
+  - path: /etc/resolvconf/resolv.conf.d/tail
+    generator: remove
+
+  - path: /etc/machine-id
+    generator: remove
+
+  - path: /var/lib/dbus/machine-id
+    generator: remove
+
+  - path: /etc/netplan/10-lxc.yaml
+    generator: dump
+    content: |-
+      network:
+        version: 2
+        ethernets:
+          eth0:
+            dhcp4: true
+            dhcp-identifier: mac
+    releases:
+      - focal
+    types:
+      - container
+    variants:
+      - default
+
+  - path: /etc/sudoers.d/90-lxd
+    generator: dump
+    mode: 0440
+    content: |-
+      # User rules for ubuntu
+      ubuntu ALL=(ALL) NOPASSWD:ALL
+    variants:
+      - default
+
+  - path: /etc/nginx/sites-enabled/default
+    generator: remove
+  - path: /etc/nginx/sites-available/wordpress
+    generator: dump
+    content: |-
+      server {
+        listen 80 default_server;
+        server_name _;
+
+        root /var/www/wordpress;
+        index index.php;
+
+        location / {
+          try_files $uri $uri/ =404;
+        }
+        location ~ \.php$ {
+          include snippets/fastcgi-php.conf;
+          fastcgi_pass unix:/run/php/php-fpm.sock;
+        }
+      }
+
+  - path: /usr/local/bin/setup-wordpress.sh
+    generator: dump
+    mode: 0755
+    content: |-
+      #!/bin/sh
+      set -e
+
+      until nc -z google.ie 80 2>/dev/null; do
+        sleep 0.2
+      done
+
+      WP_PASSWORD="$(pwgen 32 1)"
+      WP_SECRETS="$(curl -s https://api.wordpress.org/secret-key/1.1/salt/)"
+
+      cat <<EOF | mysql
+      CREATE DATABASE wordpress;
+      GRANT ALL PRIVILEGES ON wordpress.* TO "wordpress" IDENTIFIED BY "$WP_PASSWORD";
+      FLUSH PRIVILEGES;
+      EOF
+
+      old_umask="$(umask)"
+      umask 066
+      cat <<EOF > /var/www/wordpress/wp-config.php
+      <?php
+
+      /** Database config */
+      define('DB_NAME', 'wordpress');
+      define('DB_USER', 'wordpress');
+      define('DB_PASSWORD', '$WP_PASSWORD');
+      define('DB_HOST', 'localhost');
+      define('DB_CHARSET', 'utf8');
+      define('DB_COLLATE', '');
+
+      \$table_prefix = 'wp_';
+
+      /** Authentication Unique Keys and Salts */
+      $WP_SECRETS
+
+      define('WP_DEBUG', false);
+
+      /** Absolute path to the WordPress directory. */
+      if (!defined('ABSPATH')) {
+        define('ABSPATH', __DIR__ . '/');
+      }
+
+      /** Netsoc uses SSL termination! */
+      if (strpos(\$_SERVER['HTTP_X_FORWARDED_PROTO'], 'https') !== false) {
+        \$_SERVER['HTTPS'] = 'on';
+      }
+
+      /** Sets up WordPress vars and included files. */
+      require_once ABSPATH . 'wp-settings.php';
+      EOF
+      umask "$old_umask"
+
+      chown -R www-data:www-data /var/www/wordpress
+  - path: /etc/systemd/system/setup-wordpress.service
+    generator: dump
+    content: |-
+      [Unit]
+      Description=Setup WordPress
+      Requires=network-online.target mysqld.service
+      Wants=first-boot-complete.target network-online.target
+      ConditionFirstBoot=yes
+
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/local/bin/setup-wordpress.sh
+
+      [Install]
+      WantedBy=multi-user.target
+
+packages:
+  manager: apt
+  update: true
+  cleanup: true
+  sets:
+  - packages:
+      - apt-transport-https
+      - fuse
+      - language-pack-en
+      - openssh-client
+      - curl
+      - vim
+      - nano
+      - pwgen
+    action: install
+
+  - packages:
+      - mariadb-server
+      - mariadb-client
+    action: install
+
+  - packages:
+    - nginx
+    - php-fpm
+    - php-cli
+    action: install
+
+  - packages:
+    - php-curl
+    - php-xml
+    - php-mbstring
+    - php-mysql
+    - php-imagick
+    - php-zip
+    - php-gd
+    - ghostscript
+    action: install
+
+  repositories:
+  - name: sources.list
+    url: |-
+      deb http://archive.ubuntu.com/ubuntu {{ image.release }} main restricted universe multiverse
+      deb http://archive.ubuntu.com/ubuntu {{ image.release }}-updates main restricted universe multiverse
+      deb http://security.ubuntu.com/ubuntu {{ image.release }}-security main restricted universe multiverse
+    architectures:
+      - amd64
+      - i386
+
+  - name: sources.list
+    url: |-
+      deb http://ports.ubuntu.com/ubuntu-ports {{ image.release }} main restricted universe multiverse
+      deb http://ports.ubuntu.com/ubuntu-ports {{ image.release }}-updates main restricted universe multiverse
+      deb http://ports.ubuntu.com/ubuntu-ports {{ image.release }}-security main restricted universe multiverse
+    architectures:
+      - armhf
+      - arm64
+      - powerpc
+      - powerpc64
+      - ppc64el
+
+actions:
+  - trigger: post-update
+    action: |-
+      #!/bin/sh
+      set -eux
+
+      # Create the ubuntu user account
+      getent group sudo >/dev/null 2>&1 || groupadd --system sudo
+      useradd --create-home -s /bin/bash -G sudo -U ubuntu
+    variants:
+      - default
+
+  - trigger: post-packages
+    action: |-
+      #!/bin/sh
+      set -eux
+
+      # Enable systemd-networkd
+      systemctl enable systemd-networkd
+    releases:
+      - focal
+
+  - trigger: post-packages
+    action: |-
+      #!/bin/sh
+      set -eux
+
+      curl -L https://wordpress.org/wordpress-5.5.3.tar.gz | tar -C /var/www -zxf -
+
+  - trigger: post-packages
+    action: |-
+      #!/bin/sh
+      set -eux
+
+      # Make sure the locale is built and functional
+      locale-gen en_IE.UTF-8 en_US.UTF-8
+      update-locale LANG=en_IE.UTF-8
+
+      # Set time zone
+      ln -sf /usr/share/zoneinfo/Europe/Dublin /etc/localtime
+
+      # Cleanup underlying /run
+      mount -o bind / /mnt
+      rm -rf /mnt/run/*
+      umount /mnt
+
+      # Cleanup temporary shadow paths
+      rm /etc/*-
+
+  - trigger: post-files
+    action: |-
+      #!/bin/sh
+      set -eux
+
+      ln -s ../sites-available/wordpress /etc/nginx/sites-enabled/wordpress
+      systemctl enable setup-wordpress
+
+mappings:
+  architecture_map: debian
