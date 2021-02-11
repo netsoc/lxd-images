@@ -43,8 +43,7 @@ jobs:
           GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
         with:
           tag_name: ${{ github.ref }}
-          release_name: '${{ steps.build.outputs.name }} ${{ steps.vars.build.version }}'
-          body_path: release.md
+          release_name: '${{ steps.build.outputs.name }} ${{ steps.build.outputs.version }}'
 
       - name: Upload image to release
         uses: actions/upload-release-asset@v1
