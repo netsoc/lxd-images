@@ -23,7 +23,7 @@ jobs:
           VERSION="$(echo "${{ github.ref }}" | sed -r 's|refs/tags/.+/v(.+)|\1|')"
 
           echo "Building $SLUG v$VERSION"
-          XZ_OPT="--threads 0" sudo distrobuilder build-lxd "images/$CONFIG.yaml" --type unified --compression xz
+          XZ_OPT="--threads 0" sudo distrobuilder build-lxd "images/$SLUG.yaml" --type unified --compression xz
 
           OUT_FILE="out/$SLUG.tar.xz"
           sha256sum "$OUT_FILE" > "$OUT_FILE.sha256"
