@@ -25,7 +25,7 @@ jobs:
           VERSION="$(echo "${{ github.ref }}" | sed -r 's|refs/tags/.+/v(.+)|\1|')"
 
           echo "Building $SLUG v$VERSION"
-          XZ_OPT="--threads 0" sudo distrobuilder build-lxd "images/$SLUG.yaml" --type unified --compression xz
+          XZ_OPT="--threads 0" sudo distrobuilder build-lxd "images/$SLUG.yaml" out --type unified --compression xz
 
           NAME="$(find out/ -name '*.tar.xz' | sed -r 's|.*/(.+).tar.xz|\1|')"
           OUT_FILE="out/$NAME.tar.xz"
