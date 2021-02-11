@@ -27,10 +27,11 @@ jobs:
           echo "Building $SLUG v$VERSION"
           XZ_OPT="--threads 0" sudo distrobuilder build-lxd "images/$SLUG.yaml" --type unified --compression xz
 
-          OUT_FILE="out/$SLUG.tar.xz"
+          NAME="$(find out/ -name '*.tar.xz' | sed -r 's|.*/(.+).tar.xz|\1|')"
+          OUT_FILE="out/$NAME.tar.xz"
           sha256sum "$OUT_FILE" > "$OUT_FILE.sha256"
 
-          echo "::set-output name=name::"$(echo "$OUT_FILE" | sed -r 's|.*/(.+).tar.xz|\1|')""
+          echo "::set-output name=name::$NAME"
           echo "::set-output name=version::$VERSION"
           echo "::set-output name=file::$OUT_FILE"
           echo "::set-output name=checksum::$OUT_FILE.sha256"
