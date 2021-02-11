@@ -11,7 +11,9 @@ jobs:
 
     steps:
       - name: Install distrobuilder
-        run: sudo snap install distrobuilder --classic
+        run: |
+          sudo apt-get install -y debootstrap
+          sudo snap install distrobuilder --classic
 
       - name: Checkout code
         uses: actions/checkout@v2
