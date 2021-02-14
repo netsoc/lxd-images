@@ -1,0 +1,65 @@
+on:
+  push:
+    tags:
+      - '*/v*-*'
+
+name: Release
+
+jobs:
+  release:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Install distrobuilder
+        run: |
+          sudo apt-get install -y debootstrap
+          sudo snap install distrobuilder --classic
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - id: build
+        name: Build image
+        run: |
+          SLUG="$(echo "${{ github.ref }}" | sed -r 's|refs/tags/(.+)/v.+|\1|')"
+          VERSION="$(echo "${{ github.ref }}" | sed -r 's|refs/tags/.+/v(.+)|\1|')"
+
+          echo "Building $SLUG v$VERSION"
+          XZ_OPT="--threads 0" sudo distrobuilder build-lxd "images/$SLUG.yaml" out --type unified --compression xz
+
+          NAME="$(find out/ -name '*.tar.xz' | sed -r 's|.*/(.+).tar.xz|\1|')"
+          OUT_FILE="out/$NAME.tar.xz"
+          sha256sum "$OUT_FILE" > "$OUT_FILE.sha256"
+
+          echo "::set-output name=name::$NAME"
+          echo "::set-output name=version::$VERSION"
+          echo "::set-output name=file::$OUT_FILE"
+          echo "::set-output name=checksum::$OUT_FILE.sha256"
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: '${{ steps.build.outputs.name }} ${{ steps.build.outputs.version }}'
+
+      - name: Upload image to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.build.outputs.file }}
+          asset_name: image.tar.xz
+          asset_content_type: application/x-xz
+      - name: Upload image checksum to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.build.outputs.checksum }}
+          asset_name: image.tar.xz.sha256
+          asset_content_type: text/plain
