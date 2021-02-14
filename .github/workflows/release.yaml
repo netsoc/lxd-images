@@ -66,6 +66,8 @@ jobs:
           sha256sum rootfs.squashfs > rootfs.squashfs.sha256
           cat lxd.tar.xz rootfs.squashfs | sha256sum > combined.sha256
 
+          sudo sh -c 'cat /var/cache/distrobuilder.*/rootfs/debootstrap/debootstrap.log' || true
+
       - name: Upload metadata archive to release
         uses: actions/upload-release-asset@v1
         env:
