@@ -9,6 +9,11 @@ jobs:
   create_release:
     runs-on: ubuntu-20.04
 
+    outputs:
+      slug: ${{ steps.vars.outputs.slug }}
+      version: ${{ steps.vars.outputs.version }}
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+
     steps:
       - name: Generate release vars
         id: vars
@@ -46,9 +51,7 @@ jobs:
         name: Build image
         run: |
           SLUG="${{ needs.create_release.outputs.slug }}"
-          VERSION="${{ needs.create_release.outputs.slug }}"
-          SLUG="$(echo "${{ github.ref }}" | sed -r 's|refs/tags/(.+)/v.+|\1|')"
-          VERSION="$(echo "${{ github.ref }}" | sed -r 's|refs/tags/.+/v(.+)|\1|')"
+          VERSION="${{ needs.create_release.outputs.version }}"
 
           echo "Building $SLUG v$VERSION (${{ matrix.arch }})"
 
