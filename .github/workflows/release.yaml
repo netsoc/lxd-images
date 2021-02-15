@@ -39,15 +39,15 @@ jobs:
         arch: [amd64, arm64]
 
     steps:
-      - name: Install distrobuilder
-        run: |
-          sudo apt-get install -y debootstrap
-          sudo snap install distrobuilder --classic
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
         with:
           platforms: arm64
+
+      - name: Install distrobuilder
+        run: |
+          sudo apt-get install -y debootstrap
+          sudo snap install distrobuilder --classic
 
       - name: Checkout code
         uses: actions/checkout@v2
@@ -80,7 +80,7 @@ jobs:
           asset_path: out/lxd.tar.xz
           asset_name: 'lxd.${{ matrix.arch }}.tar.xz'
           asset_content_type: application/x-xz
-      - name: Upload image checksum to release
+      - name: Upload metadata checksum to release
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
