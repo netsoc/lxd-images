@@ -2,8 +2,7 @@ image:
   name: WordPress
   distribution: ubuntu
   release: focal
-  description: |-
-    WordPress 5.5.3
+  description: WordPress
 
 source:
   downloader: debootstrap
@@ -237,7 +236,7 @@ actions:
       #!/bin/sh
       set -eux
 
-      curl -L https://wordpress.org/wordpress-5.5.3.tar.gz | tar -C /var/www -zxf -
+      curl -L https://wordpress.org/wordpress-5.6.1.tar.gz | tar -C /var/www -zxf -
 
   - trigger: post-packages
     action: |-
