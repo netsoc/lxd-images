@@ -92,7 +92,7 @@ files:
       WP_PASSWORD="$(pwgen 32 1)"
       WP_SECRETS="$(curl -s https://api.wordpress.org/secret-key/1.1/salt/)"
 
-      cat <<EOF | mysql
+      cat <<EOF | mysql --wait
       CREATE DATABASE wordpress;
       GRANT ALL PRIVILEGES ON wordpress.* TO "wordpress" IDENTIFIED BY "$WP_PASSWORD";
       FLUSH PRIVILEGES;
