@@ -64,6 +64,7 @@ files:
       server {
         listen 80 default_server;
         server_name _;
+        client_max_body_size 512M;
 
         root /var/www/wordpress;
         index index.php;
@@ -236,7 +237,7 @@ actions:
       #!/bin/sh
       set -eux
 
-      curl -L https://wordpress.org/wordpress-5.6.1.tar.gz | tar -C /var/www -zxf -
+      curl -L https://wordpress.org/wordpress-5.6.2.tar.gz | tar -C /var/www -zxf -
 
   - trigger: post-packages
     action: |-
