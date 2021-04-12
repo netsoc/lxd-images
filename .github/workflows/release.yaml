@@ -66,7 +66,7 @@ jobs:
             sudo distrobuilder build-lxd "images/$SLUG.yaml" out --type split --compression xz -o "image.architecture=${{ matrix.arch }}"
           fi
 
-          sudo chmod -R 664 out
+          sudo chmod -R 777 out
           cd out
           sha256sum lxd.tar.xz > lxd.tar.xz.sha256
           sha256sum rootfs.squashfs > rootfs.squashfs.sha256
