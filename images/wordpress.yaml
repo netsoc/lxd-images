@@ -73,7 +73,7 @@ files:
 
           root /var/www/wordpress;
 
-          ## WordPress Perm links config ##               
+          ## WordPress Perm links config ##
           location / {
               try_files $uri $uri/ /index.php?$args;
           }
@@ -99,7 +99,7 @@ files:
               if (!-f $document_root$fastcgi_script_name) {
                       return 404;
               }
-              ## Setting works on Ubuntu/Debian Linux  
+              ## Setting works on Ubuntu/Debian Linux
               ### This is a robust solution for path info security issue and works with "cgi.fix_pathinfo = 1" in /etc/php.ini (default)
               include /etc/nginx/fastcgi_params;
               fastcgi_index index.php;
@@ -266,7 +266,7 @@ actions:
       #!/bin/sh
       set -eux
 
-      curl -L https://wordpress.org/wordpress-5.6.2.tar.gz | tar -C /var/www -zxf -
+      curl -L https://wordpress.org/wordpress-5.7.tar.gz | tar -C /var/www -zxf -
 
   - trigger: post-packages
     action: |-
