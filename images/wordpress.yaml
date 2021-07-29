@@ -266,7 +266,7 @@ actions:
       #!/bin/sh
       set -eux
 
-      curl -L https://wordpress.org/wordpress-5.7.tar.gz | tar -C /var/www -zxf -
+      curl -L https://wordpress.org/wordpress-5.8.tar.gz | tar -C /var/www -zxf -
 
   - trigger: post-packages
     action: |-
